@@ -4,7 +4,9 @@ use p_fenbase, forms, text_io, p_virus;
 package body p_vue_graph is
 
 
-	-- FENETRE ACCUEIL
+	---------------------
+	-- FENETRE ACCUEIL --
+	---------------------
 
 	procedure CreerFenetreAccueil(fen: out TR_Fenetre) is
 		-- {} => {Création de la fenetre avec ses boutons}
@@ -74,9 +76,9 @@ package body p_vue_graph is
 
 		end if;
 
-	--exception
+	exception
 		-- Si le niveau ne peut pas être parser alors une erreur est émise.
-		--when CONSTRAINT_ERROR => raise INFO_PARTIE_ERREUR with "Niveau invalide !";
+		when CONSTRAINT_ERROR => raise INFO_PARTIE_ERREUR with "Niveau invalide !";
 
 	end AccueilRecupInfos;
 
@@ -103,12 +105,39 @@ package body p_vue_graph is
 	end AccueilEstValide;
 
 
-	-- FENETRE JEU
+	-----------------
+	-- FENETRE JEU --
+	-----------------
 
-	function GetBoutonName(ligne: in T_Lig; col: in T_Col) return String is
+
+	-- Ces fonctions ne sont défini dans le .ads puisqu'elles sont utilent seulement ici --
+	-- Prefix pour les boutons cases et longueur
+	BC_PREFIX: constant String := "bouton_case_";
+	BC_PREFIX_LEN: constant integer := BC_PREFIX'Length;
+
+	function RecupBoutonCaseName(ligne: in T_Lig; col: in T_Col) return String is
+		-- {} => {Donne le nom interne du bouton pour une ligne/col donnés}
 	begin
-		return "bouton_case_" & col & T_Lig'image(ligne);
-	end GetBoutonName;
+		return BC_PREFIX & col & T_Lig'image(ligne);
+	end RecupBoutonCaseName;
+
+	function EstBoutonCase(nom: in String) return boolean is
+		-- {} => {True si le bouton avec le nom est bien un bouton de case}
+	begin
+		return nom'Length >= BC_PREFIX_LEN and then nom(1..BC_PREFIX_LEN) = BC_PREFIX;
+	end EstBoutonCase;
+
+	procedure RecupBoutonCasePosition(nom: in String; ligne: out T_Lig; col: out T_Col) is
+		-- {nom doit être le nom d'un bouton case valide} => {ligne et col sont défini à la position du bouton}
+		ligne_brut: String := nom(BC_PREFIX_LEN+2..BC_PREFIX_LEN+3);
+		col_brut: character := nom(BC_PREFIX_LEN+1); -- Ne pas oublier que la colonne est placé avant la ligne
+	begin
+		ligne := T_Lig'Value(ligne_brut);
+		col := col_brut;
+	end RecupBoutonCasePosition;
+
+
+
 
 	procedure CreerFenetreJeu(fen: out TR_Fenetre) is
 	-- {} => {Création de la fenêtre de jeu}
@@ -133,22 +162,29 @@ package body p_vue_graph is
 		y := y + haut_b;
 
 		for ligne in T_Lig'Range loop
+
 			AjouterTexte(fen, "nom_ligne_" & integer'image(ligne), integer'image(ligne) & "", x + 10, y, larg_b, haut_b);
 			x := x + larg_b;
+
 			for col in T_Col'Range loop
+
 				if COLONNE_INDICES(col) mod 2 = ligne mod 2 then
-					AjouterBouton(fen, GetBoutonName(ligne, col), "", x, y, larg_b, haut_b);
+					AjouterBouton(fen, RecupBoutonCaseName(ligne, col), "" & col & T_Lig'image(ligne), x, y, larg_b, haut_b);
 				end if;
+
 				x := x + larg_b;
+
 			end loop;
+
 			x := 10;
 			y := y + haut_b;
+
 		end loop;
 
 		FinFenetre(fen);
 
 	end CreerFenetreJeu;
-str
+
 	procedure JeuAfficherGrille(fen: in out TR_Fenetre; grille: in TV_Grille) is
 		-- {} => {Défini les couleurrs des cases}
 		coul: T_coul;
@@ -158,19 +194,24 @@ str
 			for col in T_Col'Range loop
 
 				coul := grille(ligne, col);
-				ChangerCouleurFond(fen, GetBoutonName(ligne, col), COULEURS_FENETRES(coul));
+				ChangerCouleurFond(fen, RecupBoutonCaseName(ligne, col), COULEURS_FENETRES(coul));
 
 			end loop;
 		end loop;
 
 	end JeuAfficherGrille;
 
-	function JeuAttendreClicCouleur(fen: in TR_Fenetre; grille: in TV_Grille) return T_coul is
+	function JeuAttendreClicCouleur(fen: in TR_Fenetre; ligne: out T_Lig; col: out T_Col) return boolean is
 		-- {} => {Attend que l'utilisateur clic sur une case de couleur}
 		str: String := AttendreBouton(fen);
 	begin
 
-		
+		if EstBoutonCase(str) then
+			RecupBoutonCasePosition(str, ligne, col);
+			return true;
+		else
+			return false;
+		end if;
 
 	end JeuAttendreClicCouleur;
 

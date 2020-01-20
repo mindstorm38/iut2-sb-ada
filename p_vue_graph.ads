@@ -3,7 +3,7 @@ use p_fenbase, forms, p_virus;
 
 package p_vue_graph is
 
-	type T_Etat is (ACCUEIL, EN_JEU, SUCCES, QUITTER);
+	type T_Etat is (ACCUEIL, SELECTION_CASE, SELECTION_DIR, SUCCES, QUITTER);
 	subtype T_Pseudo is String(1..100);
 
 	type TR_InfoPartie is record
@@ -40,8 +40,11 @@ package p_vue_graph is
 	procedure JeuAfficherGrille(fen: in out TR_Fenetre; grille: in TV_Grille);
 		-- {} => {Défini les couleurrs des cases}
 
-	function JeuAttendreClicCouleur(fen: in TR_Fenetre; grille: in TV_Grille) return T_coul;
-		-- {} => {Attend que l'utilisateur clic sur une case de couleur}
+	function JeuAttendreClicCouleur(fen: in TR_Fenetre; ligne: out T_Lig; col: out T_Col) return boolean;
+		-- {} => {Attend que l'utilisateur clic sur une case de couleur, si le retour est à true, alors col et ligne sont defini à la position de la case cliqué}
+
+ 	procedure JeuSelectCouleurs(fen: in TR_Fenetre; grille: in TV_Grille; couleur: T_coul);
+		-- {} => {}
 
 
 end p_vue_graph;

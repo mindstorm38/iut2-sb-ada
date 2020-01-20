@@ -15,22 +15,16 @@ procedure av_graph is
 	grille: TV_Grille;
 	pieces: TV_Pieces;
 
+	clic_ligne: T_Lig;
+	clic_col: T_Col;
+	clic_couleur: T_coul;
+
 	f: p_piece_io.file_type;
 
 	procedure Quitter is
 	begin
 		etat := QUITTER;
 	end Quitter;
-
-	procedure Jouer is
-	begin
-		etat := EN_JEU;
-	end Jouer;
-
-	procedure Accueil is
-	begin
-		etat := ACCUEIL;
-	end Accueil;
 
 	temp: boolean;
 
@@ -43,7 +37,7 @@ begin
 	CreerFenetreAccueil(fenetre_accueil);
 	CreerFenetreJeu(fenetre_jeu);
 
-	Accueil;
+	etat := ACCUEIL;
 	MontrerFenetre(fenetre_accueil);
 
 	while etat /= QUITTER loop
@@ -64,7 +58,7 @@ begin
 
 					JeuAfficherGrille(fenetre_jeu, grille);
 
-					Jouer;
+					etat := SELECTION_CASE;
 					CacherFenetre(fenetre_accueil);
 					MontrerFenetre(fenetre_jeu);
 
@@ -78,9 +72,20 @@ begin
 				Quitter;
 			end if;
 
-		elsif etat = EN_JEU then
+		elsif etat = SELECTION_CASE then
 
-			
+			if JeuAttendreClicCouleur(fenetre_jeu, clic_ligne, clic_col) then
+
+				clic_couleur := grille(clic_ligne, clic_col);
+				etat := SELECTION_DIR;
+
+				put_line("Ligne: " & T_Lig'Image(clic_ligne));
+				put_line("Colonne: " & T_Col'Image(clic_col));
+				put_line("Couleur: " & T_coul'Image(clic_couleur));
+
+			end if;
+
+		elsif etat := SELECTION_DIR then
 
 			temp := true;
 
