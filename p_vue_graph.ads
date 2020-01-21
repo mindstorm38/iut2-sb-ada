@@ -1,11 +1,15 @@
-with p_fenbase, forms, p_virus;
-use p_fenbase, forms, p_virus;
+with p_fenbase, forms, p_virus, ada.calendar;
+use p_fenbase, forms, p_virus, ada.calendar;
+
+with sequential_io;
 
 package p_vue_graph is
 
+	-- Enumération utilisé pour l'état actuel du jeu
 	type T_Etat is (ACCUEIL, REGLES, SELECTION_CASE, SELECTION_DIR, SUCCES, QUITTER);
 	subtype T_EtatEnJeu is T_Etat range SELECTION_CASE..SELECTION_DIR;
 
+	-- Sous-type string pour les pseudo
 	subtype T_Pseudo is String(1..100);
 
 	type TR_InfoPartie is record
@@ -14,13 +18,30 @@ package p_vue_graph is
 		taille_pseudo: integer;
 		nb_erreurs: integer;
 		nb_deplacements: integer;
+		debut_partie: Time;
+		fin_partie: Time;
+		duree_partie: integer;
 	end record;
 
+	-- Package IO pour l'enregistrement de fichiers historiques de parties
+	package p_partie_io is new sequential_io(TR_InfoPartie);
+
+	-- Erreur utilisé dans l'accueil si le pseudo ou le numéro de niveau est invalide
 	INFO_PARTIE_ERREUR: exception;
 
 	-- Mapping des couleurs du package p_virus vers les couleurs des fenêtres
 	type TV_CouleurFenetre is array(T_Coul) of T_Couleur;
 	COULEURS_FENETRES: constant TV_CouleurFenetre := (FL_RED, FL_CYAN, FL_DARKORANGE, FL_MAGENTA, FL_DARKTOMATO, FL_DODGERBLUE, FL_DARKVIOLET, FL_CHARTREUSE, FL_YELLOW, FL_WHITE, FL_INACTIVE);
+
+
+
+	-- GESTION PARTIES ET SAUVEGARDES
+
+	procedure DefinirDebutPartie(info_partie: in out TR_InfoPartie);
+		-- {} => {info_partie.debut_partie est défini au temps actuel}
+
+	procedure DefinirFinPartie(info_partie: in out TR_InfoPartie);
+		-- {} => {info_partie.fin_partie est défini et info_partie.duree_partie est calculé}
 
 	-- FENETRE ACCUEIL
 
@@ -68,9 +89,15 @@ package p_vue_graph is
 	function JeuBoutonEstRegles(nom_bouton: in String) return boolean;
 		-- {} => {Retourne True si le nom du bouton est celui de Règles}
 
-	----------------
-	-- EXTENTIONS --
-	----------------
+	-- FENETRE FIN
+
+	procedure CreerFenetreFin(fen : out TR_Fenetre);
+		-- {} => {Création de la fenetre de congratulation de fin de partie}
+
+	function FinBoutonEstQuitter(nom_bouton: in String) return boolean;
+		-- {} => {True si le nom_bouton est le bouton Quitter}
+
+	-- EXTENTIONS
 
 	procedure CreerFenetreRegles(fen : out TR_Fenetre);
 		-- {} => {Création de la fenêtre des règles}

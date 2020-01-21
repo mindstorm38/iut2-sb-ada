@@ -1,5 +1,5 @@
-with text_io, p_virus;
-use text_io, p_virus;
+with text_io, p_virus, ada.characters.latin_1;
+use text_io, p_virus, ada.characters.latin_1;
 
 package body p_vuetxt is
 
@@ -50,8 +50,12 @@ package body p_vuetxt is
 						when vide => put(". ");
 						when blanc => put("F ");
 						when others =>
+							put(ESC);
+							put(COULEUR_ANSI(couleur));
 							put(T_Coul'Pos(couleur), 0);
 							put(' ');
+							put(ESC);
+							put(RESET_ANSI);
 					end case;
 
 				else

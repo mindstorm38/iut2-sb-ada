@@ -13,10 +13,11 @@ package p_virus is
 	type TV_ColIndice is array (T_Col) of integer;
 	COLONNE_INDICES: constant TV_ColIndice := (1, 2, 3, 4, 5, 6, 7);
 
+	-- Grille
 	type TV_Grille is array (T_lig,T_col) of T_Coul;
 
-	-- type pour les pièces du jeu
-	subtype T_CoulP is T_Coul range rouge..blanc; -- couleurs des pièces
+	-- Type pour les pièces du jeu
+	subtype T_CoulP is T_Coul range rouge..blanc;
 
 	-- Package pour la lecture des couleurs, nous avons décider de ne pas utilise le package de p_esiut
 	package p_coul_io is new enumeration_io(T_CoulP);

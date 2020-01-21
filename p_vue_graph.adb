@@ -1,8 +1,33 @@
-with p_fenbase, forms, text_io, p_virus;
-use p_fenbase, forms, text_io, p_virus;
+with p_fenbase, forms, text_io, p_virus, ada.calendar;
+use p_fenbase, forms, text_io, p_virus, ada.calendar;
 
 package body p_vue_graph is
 
+	-- Constante pour le caractère de retour à la ligne
+	NEW_LINE: constant character := character'Val(10);
+
+	------------------------------------
+	-- GESTION PARTIES ET SAUVEGARDES --
+	------------------------------------
+
+
+	procedure DefinirDebutPartie(info_partie: in out TR_InfoPartie) is
+		-- {} => {info_partie.debut_partie est défini au temps actuel, info_partie.nb_erreurs et info_partie.nb_deplacements sont mis à zero}
+	begin
+
+		info_partie.debut_partie := clock;
+		info_partie.nb_erreurs := 0;
+		info_partie.nb_deplacements := 0;
+
+	end DefinirDebutPartie;
+
+
+	procedure DefinirFinPartie(info_partie: in out TR_InfoPartie) is
+		-- {} => {info_partie.fin_partie est défini et info_partie.duree_partie est calculé}
+	begin
+		info_partie.fin_partie := clock;
+		info_partie.duree_partie := integer(info_partie.fin_partie - info_partie.debut_partie);
+	end DefinirFinPartie;
 
 	---------------------
 	-- FENETRE ACCUEIL --
@@ -14,6 +39,7 @@ package body p_vue_graph is
 	BOUTON_ACC_VALIDER: constant String := "accueil_valider";
 	BOUTON_ACC_QUITTER: constant String := "accueil_quitter";
 	BOUTON_ACC_REGLES: constant String := "accueil_regles";
+
 
 	procedure CreerFenetreAccueil(fen: out TR_Fenetre) is
 		-- {} => {Création de la fenetre avec ses boutons}
@@ -48,12 +74,12 @@ package body p_vue_graph is
 		-- Boutons
 		AjouterBouton(fen, BOUTON_ACC_VALIDER, "Valider", 80, 300, 150, 40, FL_RETURN_BUTTON);
 		AjouterBouton(fen, BOUTON_ACC_QUITTER, "Quitter", 250, 300, 150, 40);
-
 		AjouterBouton(fen, BOUTON_ACC_REGLES, "Regles", 165, 350, 150, 30);
 
 		FinFenetre(fen);
 
 	end CreerFenetreAccueil;
+
 
 	function AccueilRecupInfos(fen: in TR_Fenetre; niveau_max: in positive) return TR_InfoPartie is
 		-- {} => {Retour l'information sur la partie à partir des informations entrées}
@@ -77,7 +103,7 @@ package body p_vue_graph is
 
 				-- On n'écrase que les caractères nécessaires pour éviter les CONSTRAINT_ERROR
 				pseudo(1..pseudo_brut'Length) := pseudo_brut;
-				return (pseudo, niveau, pseudo_brut'Length, 0, 0);
+				return (pseudo, niveau, pseudo_brut'Length, 0, 0, clock, clock, 0);
 
 			else
 				raise INFO_PARTIE_ERREUR with "Niveau invalide !";
@@ -90,6 +116,7 @@ package body p_vue_graph is
 		when CONSTRAINT_ERROR => raise INFO_PARTIE_ERREUR with "Niveau invalide !";
 
 	end AccueilRecupInfos;
+
 
 	procedure AccueilAfficherMessage(fen: in out TR_Fenetre; message: in String) is
 		-- {} => {Un message a été affiché}
@@ -106,17 +133,20 @@ package body p_vue_graph is
 
 	end AccueilAfficherMessage;
 
+
 	function AccueilBoutonEstQuitter(nom_bouton: in String) return boolean is
 		-- {} => {True si le nom de bouton est la bouton quitter}
 	begin
 		return nom_bouton = BOUTON_ACC_QUITTER;
 	end AccueilBoutonEstQuitter;
 
+
 	function AccueilBoutonEstValider(nom_bouton: in String) return boolean is
 		-- {} => {True si le nom de bouton est le bouton valider}
 	begin
 		return nom_bouton = BOUTON_ACC_VALIDER;
 	end AccueilBoutonEstValider;
+
 
 	function AccueilBoutonEstRegles(nom_bouton: in String) return boolean is
 		-- {} => {True si le nom de bouton est le bouton règles}
@@ -141,11 +171,13 @@ package body p_vue_graph is
 		return BC_PREFIX & col & T_Lig'image(ligne);
 	end RecupBoutonCaseName;
 
+
 	function EstBoutonCase(nom: in String) return boolean is
 		-- {} => {True si le bouton avec le nom est bien un bouton de case}
 	begin
 		return nom'Length >= BC_PREFIX_LEN and then nom(1..BC_PREFIX_LEN) = BC_PREFIX;
 	end EstBoutonCase;
+
 
 	procedure RecupBoutonCasePosition(nom: in String; ligne: out T_Lig; col: out T_Col) is
 		-- {nom doit être le nom d'un bouton case valide} => {ligne et col sont défini à la position du bouton}
@@ -166,6 +198,8 @@ package body p_vue_graph is
 	BOUTON_JEU_RECOMMENCER: constant String := "bouton_jeu_recommencer";
 	BOUTON_JEU_REGLES: constant String := "bouton_jeu_regles";
 	TEXTE_JEU_ERREURS: constant String := "texte_jeu_erreurs";
+	CHRONO_JEU: constant String := "jeu_chrono";
+
 
 	procedure CreerFenetreJeu(fen: out TR_Fenetre) is
 		-- {} => {Création de la fenêtre de jeu}
@@ -210,9 +244,11 @@ package body p_vue_graph is
 
 		end loop;
 
+		-- Le bouton au centre des bouton de direction servant à savoir quelle couleur on veut bouger.
 		AjouterBouton(fen, BOUTON_DIR_CASE, "", 215, 462, 30, 30);
 		ChangerEtatBouton(fen, BOUTON_DIR_CASE, ARRET);
 
+		-- Ajout des boutons de direction avec leurs images
 		AjouterBoutonImage(fen, BOUTON_DIR_BG, "", "fleche_bg.xpm", 185, 483, 40, 40);
 		AjouterBoutonImage(fen, BOUTON_DIR_HG, "", "fleche_hg.xpm", 185, 433, 40, 40);
 		AjouterBoutonImage(fen, BOUTON_DIR_BD, "", "fleche_bd.xpm", 235, 483, 40, 40);
@@ -223,16 +259,19 @@ package body p_vue_graph is
 		ChangerCouleurFond(fen, BOUTON_DIR_BD, FL_WHITE);
 		ChangerCouleurFond(fen, BOUTON_DIR_HD, FL_WHITE);
 
+		-- Boutons de gestion de partie
 		AjouterBouton(fen, BOUTON_JEU_RECOMMENCER, "Recommencer", 25, 432, 120, 24);
 		AjouterBouton(fen, BOUTON_JEU_QUITTER, "Quitter", 25, 466, 120, 24);
 		AjouterBouton(fen, BOUTON_JEU_REGLES, "Regles", 25, 500, 120, 24);
 
-		AjouterTexte(fen, TEXTE_JEU_ERREURS, "", 290, 430, 140, 30);
+		-- Ajout du texte du status de la partie (nb_erreur et nb_deplacements)
+		AjouterTexte(fen, TEXTE_JEU_ERREURS, "", 290, 430, 140, 40);
 		ChangerAlignementTexte(fen, TEXTE_JEU_ERREURS, FL_ALIGN_CENTER);
 
 		FinFenetre(fen);
 
 	end CreerFenetreJeu;
+
 
 	procedure JeuAfficherGrille(fen: in out TR_Fenetre; grille: in TV_Grille; info_partie: in TR_InfoPartie) is
 		-- {} => {Défini les couleurs des cases}
@@ -245,7 +284,7 @@ package body p_vue_graph is
 		CacherElem(fen, BOUTON_DIR_BD);
 		CacherElem(fen, BOUTON_DIR_HD);
 
-		ChangerTexte(fen, TEXTE_JEU_ERREURS, "Nombre d'erreurs :" & integer'Image(info_partie.nb_erreurs));
+		ChangerTexte(fen, TEXTE_JEU_ERREURS, "Nombre d'erreurs :" & integer'Image(info_partie.nb_erreurs) & NEW_LINE & "Deplacements :" & integer'Image(info_partie.nb_deplacements));
 
 		for ligne in T_Lig'Range loop
 			for col in T_Col'Range loop
@@ -266,6 +305,7 @@ package body p_vue_graph is
 
 	end JeuAfficherGrille;
 
+
 	function JeuBoutonEstClicCouleur(nom_bouton: in String; ligne: out T_Lig; col: out T_Col) return boolean is
 		-- {} => {Si le nom_bouton est celui d'une case couleur, alors ligne et col sont défini et True est retourné}
 	begin
@@ -279,6 +319,7 @@ package body p_vue_graph is
 
 	end JeuBoutonEstClicCouleur;
 
+
 	procedure JeuSelectCouleurs(fen: in out TR_Fenetre; grille: in TV_Grille; couleur: T_coul) is
 		-- {} => {Affiche les boutons directionnel pour la couleur}
 	begin
@@ -290,13 +331,8 @@ package body p_vue_graph is
 		MontrerElem(fen, BOUTON_DIR_BD);
 		MontrerElem(fen, BOUTON_DIR_HD);
 
-		for ligne in T_Lig'Range loop
-			for col in T_Col'Range loop
-				ChangerEtatBouton(fen, RecupBoutonCaseName(ligne, col), ARRET);
-			end loop;
-		end loop;
-
 	end JeuSelectCouleurs;
+
 
 	function JeuBoutonEstDirection(nom_bouton: in String; dir: out T_Direction) return boolean is
 		-- {} => {Si le bouton est un bouton de direction, dir est mis à jour et True est retourné}
@@ -318,11 +354,13 @@ package body p_vue_graph is
 
 	end JeuBoutonEstDirection;
 
+
 	function JeuBoutonEstRecommencer(nom_bouton: in String) return boolean is
 		-- {} => {Retourne True si le nom du bouton est celui de recommencer}
 	begin
 		return nom_bouton = BOUTON_JEU_RECOMMENCER;
 	end JeuBoutonEstRecommencer;
+
 
 	function JeuBoutonEstQuitter(nom_bouton: in String) return boolean is
 		-- {} => {Retourne True si le nom du bouton est celui de quitter}
@@ -330,11 +368,48 @@ package body p_vue_graph is
 		return nom_bouton = BOUTON_JEU_QUITTER;
 	end JeuBoutonEstQuitter;
 
+
 	function JeuBoutonEstRegles(nom_bouton: in String) return boolean is
 		-- {} => {Retourne True si le nom du bouton est celui de Règles}
 	begin
 		return nom_bouton = BOUTON_JEU_REGLES;
 	end JeuBoutonEstRegles;
+
+
+	-----------------
+	-- FENETRE FIN --
+	-----------------
+
+
+	BOUTON_FIN_QUITTER: String := "fin_quitter";
+
+	procedure CreerFenetreFin(fen : out TR_Fenetre) is
+		-- {} => {Création de la fenetre de congratulation de fin de partie}
+	begin
+		fen := DebutFenetre("Felicitations", 440, 710);
+		AjouterTexte(fen,"Felecitations_Titre",
+			"FELICITATIONS,"
+			& NEW_LINE
+			&
+			"VOUS AVEZ GAGNE !"
+			,5, 5, 430, 150);
+		ChangerTailleTexte(fen, "Felecitations_Titre", 30);
+		ChangerAlignementTexte(fen, "Felecitations_Titre", FL_ALIGN_CENTER);
+		ChangerStyleTexte(fen, "Felecitations_Titre", FL_TIMESBOLD_STYLE);
+
+		AjouterImage(fen, "Felicitations_image","trumpet_boi.xpm","",95,150,250,472);
+
+		AjouterBouton(fen, BOUTON_FIN_QUITTER, "Revenir a l'accueil", 120, 650, 200, 40);
+
+		FinFenetre(fen);
+
+	end CreerFenetreFin;
+
+	function FinBoutonEstQuitter(nom_bouton: in String) return boolean is
+		-- {} => {True si le nom_bouton est le bouton Quitter}
+	begin
+		return nom_bouton = BOUTON_FIN_QUITTER;
+	end FinBoutonEstQuitter;
 
 	----------------
 	-- EXTENTIONS --
@@ -345,8 +420,6 @@ package body p_vue_graph is
 
 	procedure CreerFenetreRegles(fen : out TR_Fenetre) is
 		-- {} => {Création de la fenêtre des règles}
-		NewLine : constant Character := Character'Val (10); --retour chariot
-
 	begin
 		fen := DebutFenetre("Regles", 440, 440);
 		AjouterTexte(fen,"Regles_Titre", "Regles",5, 5, 430, 70);
@@ -355,27 +428,27 @@ package body p_vue_graph is
 		ChangerStyleTexte(fen, "Regles_Titre", FL_TIMESBOLD_STYLE);
 
 		AjouterTexte(fen,"Regles_L",
-			"Objectif : sortir le virus (en rouge) de la cellule en le placant en haut " & NewLine & "a gauche du plateau en un minimum de coups."
-				& NewLine
-				& NewLine
+			"Objectif : sortir le virus (en rouge) de la cellule en le placant en haut " & NEW_LINE & "a gauche du plateau en un minimum de coups."
+				& NEW_LINE
+				& NEW_LINE
 				&
 				"Niveaux : il y a un total de 20 niveaux, de difficulte croissante."
-				& NewLine
-				& NewLine
+				& NEW_LINE
+				& NEW_LINE
 				&
-				"Obstacles : des molecules sont presentes dans la cellule et genent" & NewLine & "le deplacement du virus."
-				& NewLine
-				& NewLine
+				"Obstacles : des molecules sont presentes dans la cellule et genent" & NEW_LINE & "le deplacement du virus."
+				& NEW_LINE
+				& NEW_LINE
 				&
-				"Comment jouer ? " & NewLine & "Cliquez sur le virus ou une molecule pour la selectionner, puis" & NewLine & "cliquez sur une des fleches directionnelles qui apparatront en bas" & NewLine & "pour la deplacer. La couleur selectionnee s affiche au milieu des" & NewLine & "fleches directionnelles."
-				& NewLine
-				& NewLine
+				"Comment jouer ? " & NEW_LINE & "Cliquez sur le virus ou une molecule pour la selectionner, puis" & NEW_LINE & "cliquez sur une des fleches directionnelles qui apparatront en bas" & NEW_LINE & "pour la deplacer. La couleur selectionnee s affiche au milieu des" & NEW_LINE & "fleches directionnelles."
+				& NEW_LINE
+				& NEW_LINE
 				&
 				"Contraintes :"
-				& NewLine
+				& NEW_LINE
 				&
-				" - Les pieces ne sont deplacables qu en diagonale et ne peuvent " & NewLine & "pas pivoter."
-				& NewLine
+				" - Les pieces ne sont deplacables qu en diagonale et ne peuvent " & NEW_LINE & "pas pivoter."
+				& NEW_LINE
 				&
 				" - Les pieces blanches ne sont pas deplacables"
 			,5, 70, 430, 300);

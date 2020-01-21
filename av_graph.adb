@@ -10,6 +10,7 @@ procedure av_graph is
 	fenetre_accueil: TR_Fenetre;
 	fenetre_jeu: TR_Fenetre;
 	fenetre_regles: TR_Fenetre;
+	fenetre_fin: TR_Fenetre;
 	etat: T_Etat;
 	dernier_etat: T_Etat;
 
@@ -32,6 +33,8 @@ procedure av_graph is
 			return AttendreBouton(fenetre_jeu);
 		elsif etat = REGLES then
 			return AttendreBouton(fenetre_regles);
+		elsif etat = SUCCES then
+			return AttendreBouton(fenetre_fin);
 		else
 			return AttendreBouton(fenetre_accueil);
 		end if;
@@ -55,6 +58,7 @@ begin
 	CreerFenetreAccueil(fenetre_accueil);
 	CreerFenetreJeu(fenetre_jeu);
 	CreerFenetreRegles(fenetre_regles);
+	CreerFenetreFin(fenetre_fin);
 
 	etat := ACCUEIL;
 	MontrerFenetre(fenetre_accueil);
@@ -80,6 +84,9 @@ begin
 
 						InitEtConfigDepuisInfoPartie;
 						JeuAfficherGrille(fenetre_jeu, grille, info_partie);
+
+						-- On défini le temps de debut de partie
+						DefinirDebutPartie(info_partie);
 
 						etat := SELECTION_CASE;
 						CacherFenetre(fenetre_accueil);
@@ -124,12 +131,13 @@ begin
 
 				if JeuBoutonEstRecommencer(nom_bouton) then
 
+					-- On (re)défini le temps de debut de partie et on met à (re)met à zéro le nb_erreurs et nb_deplacements
+					DefinirDebutPartie(info_partie);
+
 					-- On appel l'initialisation puis la configuration de la partie, comme on le fait au début du jeu
-					-- On n'oublie pas de réinitialiser les données d'InfoPartie
 					InitEtConfigDepuisInfoPartie;
-					info_partie.nb_erreurs = 0;
-					info_partie.nb_deplacements = 0;
 					JeuAfficherGrille(fenetre_jeu, grille, info_partie);
+
 					etat := SELECTION_CASE;
 
 				elsif JeuBoutonEstQuitter(nom_bouton) then
@@ -146,7 +154,7 @@ begin
 					CacherFenetre(fenetre_jeu);
 					MontrerFenetre(fenetre_regles);
 
-				elsif etat = SELECTION_CASE and JeuBoutonEstClicCouleur(nom_bouton, clic_ligne, clic_col) then
+				elsif JeuBoutonEstClicCouleur(nom_bouton, clic_ligne, clic_col) then
 
 					clic_couleur := grille(clic_ligne, clic_col);
 
@@ -161,13 +169,41 @@ begin
 				elsif etat = SELECTION_DIR and JeuBoutonEstDirection(nom_bouton, clic_direction) then
 
 					if Possible(grille, clic_couleur, clic_direction) then
+
 						MajGrille(grille, clic_couleur, clic_direction);
+						info_partie.nb_deplacements := info_partie.nb_deplacements + 1;
+
 					else
 						info_partie.nb_erreurs := info_partie.nb_erreurs + 1;
 					end if;
 
-					etat := SELECTION_CASE;
 					JeuAfficherGrille(fenetre_jeu, grille, info_partie);
+
+					-- On test le gain de la partie
+					if Guerison(grille) then
+
+						etat := SUCCES;
+
+						DefinirFinPartie(info_partie);
+
+						CacherFenetre(fenetre_jeu);
+						MontrerFenetre(fenetre_fin);
+
+						put_line("Succés ! " & integer'image(info_partie.duree_partie));
+
+					else
+						etat := SELECTION_CASE;
+					end if;
+
+				end if;
+
+			elsif etat = SUCCES then
+
+				if FinBoutonEstQuitter(nom_bouton) then
+
+					etat := ACCUEIL;
+					CacherFenetre(fenetre_fin);
+					MontrerFenetre(fenetre_accueil);
 
 				end if;
 
