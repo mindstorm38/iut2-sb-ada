@@ -98,7 +98,6 @@ package body p_virus is
 		-- => {résultat= vrai si la pièce de couleur coul peut être déplacée dans la direction Dir}
 		ligne_temp: integer;
 		col_temp: character;
-		grille_coul: T_coul;
 	begin
 
 		for ligne in T_Lig'Range loop
@@ -122,8 +121,7 @@ package body p_virus is
 							col_temp := T_Col'succ(col);
 					end case;
 
-					grille_coul := grille(ligne_temp, col_temp);
-					if ligne_temp not in T_Lig'Range or else col not in T_Col'Range or else (grille_coul /= vide and grille_coul /= coul) then
+					if ligne_temp not in T_Lig'Range or else col_temp not in T_Col'Range or else (grille(ligne_temp, col_temp) /= vide and grille(ligne_temp, col_temp) /= coul) then
 						return false;
 					end if;
 

@@ -3,13 +3,16 @@ use p_fenbase, forms, p_virus;
 
 package p_vue_graph is
 
-	type T_Etat is (ACCUEIL, SELECTION_CASE, SELECTION_DIR, SUCCES, QUITTER);
+	type T_Etat is (ACCUEIL, REGLES, SELECTION_CASE, SELECTION_DIR, SUCCES, QUITTER);
+	subtype T_EtatEnJeu is T_Etat range SELECTION_CASE..SELECTION_DIR;
+
 	subtype T_Pseudo is String(1..100);
 
 	type TR_InfoPartie is record
 		pseudo: T_Pseudo;
 		niveau: integer;
 		taille_pseudo: integer;
+		nb_erreurs: integer;
 	end record;
 
 	INFO_PARTIE_ERREUR: exception;
@@ -29,22 +32,47 @@ package p_vue_graph is
 	procedure AccueilAfficherMessage(fen: in out TR_Fenetre; message: in String);
 		-- {} => {Un message a été affiché}
 
-	function AccueilEstValide(fen: in TR_Fenetre) return boolean;
-		-- {} => {True si l'evennement de la fenetre accueil est valide}
+	function AccueilBoutonEstQuitter(nom_bouton: in String) return boolean;
+		-- {} => {True si le nom de bouton est la bouton quitter}
+
+	function AccueilBoutonEstValider(nom_bouton: in String) return boolean;
+		-- {} => {True si le nom de bouton est le bouton valider}
+
+	function AccueilBoutonEstRegles(nom_bouton: in String) return boolean;
+		-- {} => {True si le nom de bouton est le bouton règles}
 
 	-- FENETRE JEU
 
 	procedure CreerFenetreJeu(fen: out TR_Fenetre);
 		-- {} => {Création de la fenêtre de jeu}
 
-	procedure JeuAfficherGrille(fen: in out TR_Fenetre; grille: in TV_Grille);
-		-- {} => {Défini les couleurrs des cases}
+	procedure JeuAfficherGrille(fen: in out TR_Fenetre; grille: in TV_Grille; info_partie: in TR_InfoPartie);
+		-- {} => {Défini les couleurs des cases}
 
-	function JeuAttendreClicCouleur(fen: in TR_Fenetre; ligne: out T_Lig; col: out T_Col) return boolean;
-		-- {} => {Attend que l'utilisateur clic sur une case de couleur, si le retour est à true, alors col et ligne sont defini à la position de la case cliqué}
+	function JeuBoutonEstClicCouleur(nom_bouton: in String; ligne: out T_Lig; col: out T_Col) return boolean;
+		-- {} => {Si le nom_bouton est celui d'une case couleur, alors ligne et col sont défini et True est retourné}
 
- 	procedure JeuSelectCouleurs(fen: in TR_Fenetre; grille: in TV_Grille; couleur: T_coul);
-		-- {} => {}
+ 	procedure JeuSelectCouleurs(fen: in out TR_Fenetre; grille: in TV_Grille; couleur: T_coul);
+		-- {} => {Affiche les boutons directionnel pour la couleur}
+
+	function JeuBoutonEstDirection(nom_bouton: in String; dir: out T_Direction) return boolean;
+		-- {} => {Si le bouton est un bouton de direction, dir est mis à jour et True est retourné}
+
+	function JeuBoutonEstRecommencer(nom_bouton: in String) return boolean;
+		-- {} => {Retourne True si le nom du bouton est celui de recommencer}
+
+	function JeuBoutonEstQuitter(nom_bouton: in String) return boolean;
+		-- {} => {Retourne True si le nom du bouton est celui de quitter}
+
+	----------------
+	-- EXTENTIONS --
+	----------------
+
+	procedure CreerFenetreRegles(fen : out TR_Fenetre);
+		-- {} => {Création de la fenêtre des règles}
+
+	function ReglesBoutonEstQuitter(nom_bouton: in String) return boolean;
+		-- {} => {Retourne True si nom_bouton est celui de Quitter}
 
 
 end p_vue_graph;
