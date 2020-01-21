@@ -77,7 +77,7 @@ package body p_vue_graph is
 
 				-- On n'écrase que les caractères nécessaires pour éviter les CONSTRAINT_ERROR
 				pseudo(1..pseudo_brut'Length) := pseudo_brut;
-				return (pseudo, niveau, pseudo_brut'Length, 0);
+				return (pseudo, niveau, pseudo_brut'Length, 0, 0);
 
 			else
 				raise INFO_PARTIE_ERREUR with "Niveau invalide !";
@@ -164,6 +164,7 @@ package body p_vue_graph is
 	BOUTON_DIR_HD: constant String := "bouton_dir_hd";
 	BOUTON_JEU_QUITTER: constant String := "bouton_jeu_quitter";
 	BOUTON_JEU_RECOMMENCER: constant String := "bouton_jeu_recommencer";
+	BOUTON_JEU_REGLES: constant String := "bouton_jeu_regles";
 	TEXTE_JEU_ERREURS: constant String := "texte_jeu_erreurs";
 
 	procedure CreerFenetreJeu(fen: out TR_Fenetre) is
@@ -209,18 +210,24 @@ package body p_vue_graph is
 
 		end loop;
 
-		AjouterBouton(fen, BOUTON_DIR_CASE, "", 210, 454, 20, 20);
+		AjouterBouton(fen, BOUTON_DIR_CASE, "", 215, 462, 30, 30);
 		ChangerEtatBouton(fen, BOUTON_DIR_CASE, ARRET);
 
-		AjouterBouton(fen, BOUTON_DIR_BG, "", 185, 470, 30, 30);
-		AjouterBouton(fen, BOUTON_DIR_HG, "", 185, 430, 30, 30);
-		AjouterBouton(fen, BOUTON_DIR_BD, "", 225, 470, 30, 30);
-		AjouterBouton(fen, BOUTON_DIR_HD, "", 225, 430, 30, 30);
+		AjouterBoutonImage(fen, BOUTON_DIR_BG, "", "fleche_bg.xpm", 185, 483, 40, 40);
+		AjouterBoutonImage(fen, BOUTON_DIR_HG, "", "fleche_hg.xpm", 185, 433, 40, 40);
+		AjouterBoutonImage(fen, BOUTON_DIR_BD, "", "fleche_bd.xpm", 235, 483, 40, 40);
+		AjouterBoutonImage(fen, BOUTON_DIR_HD, "", "fleche_hd.xpm", 235, 433, 40, 40);
 
-		AjouterBouton(fen, BOUTON_JEU_QUITTER, "Quitter", 25, 470, 120, 30);
-		AjouterBouton(fen, BOUTON_JEU_RECOMMENCER, "Recommencer", 25, 430, 120, 30);
+		ChangerCouleurFond(fen, BOUTON_DIR_BG, FL_WHITE);
+		ChangerCouleurFond(fen, BOUTON_DIR_HG, FL_WHITE);
+		ChangerCouleurFond(fen, BOUTON_DIR_BD, FL_WHITE);
+		ChangerCouleurFond(fen, BOUTON_DIR_HD, FL_WHITE);
 
-		AjouterTexte(fen, TEXTE_JEU_ERREURS, "", 270, 430, 150, 30);
+		AjouterBouton(fen, BOUTON_JEU_RECOMMENCER, "Recommencer", 25, 432, 120, 24);
+		AjouterBouton(fen, BOUTON_JEU_QUITTER, "Quitter", 25, 466, 120, 24);
+		AjouterBouton(fen, BOUTON_JEU_REGLES, "Regles", 25, 500, 120, 24);
+
+		AjouterTexte(fen, TEXTE_JEU_ERREURS, "", 290, 430, 140, 30);
 		ChangerAlignementTexte(fen, TEXTE_JEU_ERREURS, FL_ALIGN_CENTER);
 
 		FinFenetre(fen);
@@ -322,6 +329,12 @@ package body p_vue_graph is
 	begin
 		return nom_bouton = BOUTON_JEU_QUITTER;
 	end JeuBoutonEstQuitter;
+
+	function JeuBoutonEstRegles(nom_bouton: in String) return boolean is
+		-- {} => {Retourne True si le nom du bouton est celui de Règles}
+	begin
+		return nom_bouton = BOUTON_JEU_REGLES;
+	end JeuBoutonEstRegles;
 
 	----------------
 	-- EXTENTIONS --

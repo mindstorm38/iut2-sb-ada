@@ -13,6 +13,7 @@ package p_vue_graph is
 		niveau: integer;
 		taille_pseudo: integer;
 		nb_erreurs: integer;
+		nb_deplacements: integer;
 	end record;
 
 	INFO_PARTIE_ERREUR: exception;
@@ -63,6 +64,9 @@ package p_vue_graph is
 
 	function JeuBoutonEstQuitter(nom_bouton: in String) return boolean;
 		-- {} => {Retourne True si le nom du bouton est celui de quitter}
+
+	function JeuBoutonEstRegles(nom_bouton: in String) return boolean;
+		-- {} => {Retourne True si le nom du bouton est celui de Règles}
 
 	----------------
 	-- EXTENTIONS --

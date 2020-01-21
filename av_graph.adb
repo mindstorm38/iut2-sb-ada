@@ -24,11 +24,6 @@ procedure av_graph is
 
 	f: p_piece_io.file_type;
 
-	procedure Quitter is
-	begin
-		etat := QUITTER;
-	end Quitter;
-
 	function AttendreBoutonFenetreActuelle return String is
 		-- {} => {Attend, en fonction de la fenetre actuelle, le clic des boutons}
 	begin
@@ -42,6 +37,14 @@ procedure av_graph is
 		end if;
 
 	end AttendreBoutonFenetreActuelle;
+
+	procedure InitEtConfigDepuisInfoPartie is
+	begin
+
+		InitPartie(grille, pieces);
+		Configurer(f, info_partie.niveau, grille, pieces);
+
+	end InitEtConfigDepuisInfoPartie;
 
 begin
 
@@ -65,7 +68,7 @@ begin
 			if etat = ACCUEIL then
 
 				if AccueilBoutonEstQuitter(nom_bouton) then
-					Quitter;
+					etat := QUITTER;
 				elsif AccueilBoutonEstValider(nom_bouton) then
 
 					begin
@@ -75,9 +78,7 @@ begin
 						-- Afficher un message vide permet de s'assurer que le texte message n'est plus visible.
 						AccueilAfficherMessage(fenetre_accueil, "");
 
-						InitPartie(grille, pieces);
-						Configurer(f, info_partie.niveau, grille, pieces);
-
+						InitEtConfigDepuisInfoPartie;
 						JeuAfficherGrille(fenetre_jeu, grille, info_partie);
 
 						etat := SELECTION_CASE;
@@ -122,12 +123,28 @@ begin
 				-- Peut importe l'état si on est en jeu, alors on vérifie les évennement Recommencer, Quitter.
 
 				if JeuBoutonEstRecommencer(nom_bouton) then
-					put("recommencer");
+
+					-- On appel l'initialisation puis la configuration de la partie, comme on le fait au début du jeu
+					-- On n'oublie pas de réinitialiser les données d'InfoPartie
+					InitEtConfigDepuisInfoPartie;
+					info_partie.nb_erreurs = 0;
+					info_partie.nb_deplacements = 0;
+					JeuAfficherGrille(fenetre_jeu, grille, info_partie);
+					etat := SELECTION_CASE;
+
 				elsif JeuBoutonEstQuitter(nom_bouton) then
 
 					etat := ACCUEIL;
 					CacherFenetre(fenetre_jeu);
 					MontrerFenetre(fenetre_accueil);
+
+				elsif JeuBoutonEstRegles(nom_bouton) then
+
+					-- On défini dernier_etat à l'état du jeu actuel afin que la fenêtre des règles puisse revenir à l'accueil.
+					dernier_etat := etat;
+					etat := REGLES;
+					CacherFenetre(fenetre_jeu);
+					MontrerFenetre(fenetre_regles);
 
 				elsif etat = SELECTION_CASE and JeuBoutonEstClicCouleur(nom_bouton, clic_ligne, clic_col) then
 
