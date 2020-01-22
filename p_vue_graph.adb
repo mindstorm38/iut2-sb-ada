@@ -40,7 +40,6 @@ package body p_vue_graph is
 	BOUTON_ACC_QUITTER: constant String := "accueil_quitter";
 	BOUTON_ACC_REGLES: constant String := "accueil_regles";
 
-
 	procedure CreerFenetreAccueil(fen: out TR_Fenetre) is
 		-- {} => {Création de la fenetre avec ses boutons}
 	begin
@@ -198,8 +197,7 @@ package body p_vue_graph is
 	BOUTON_JEU_RECOMMENCER: constant String := "bouton_jeu_recommencer";
 	BOUTON_JEU_REGLES: constant String := "bouton_jeu_regles";
 	TEXTE_JEU_ERREURS: constant String := "texte_jeu_erreurs";
-	CHRONO_JEU: constant String := "jeu_chrono";
-
+	BOUTON_JEU_ANNULER: constant String := "bouton_jeu_annuler";
 
 	procedure CreerFenetreJeu(fen: out TR_Fenetre) is
 		-- {} => {Création de la fenêtre de jeu}
@@ -267,6 +265,9 @@ package body p_vue_graph is
 		-- Ajout du texte du status de la partie (nb_erreur et nb_deplacements)
 		AjouterTexte(fen, TEXTE_JEU_ERREURS, "", 290, 430, 140, 40);
 		ChangerAlignementTexte(fen, TEXTE_JEU_ERREURS, FL_ALIGN_CENTER);
+
+		-- Ajout du bouton pour annuler le dernier déplacement
+		AjouterBouton(fen, BOUTON_JEU_ANNULER, "Annuler", 300, 480, 120, 24);
 
 		FinFenetre(fen);
 

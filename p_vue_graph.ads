@@ -12,6 +12,7 @@ package p_vue_graph is
 	-- Sous-type string pour les pseudo
 	subtype T_Pseudo is String(1..100);
 
+	-- Type record global qui sert à stocker les infos d'une partie
 	type TR_InfoPartie is record
 		pseudo: T_Pseudo;
 		niveau: integer;
@@ -23,6 +24,13 @@ package p_vue_graph is
 		duree_partie: integer;
 	end record;
 
+	-- Type record qui stocke la derniere action
+	type TR_Sauvegarde is record
+		grille: TV_Grille;
+		nb_erreurs: integer;
+		nb_deplacements: integer;
+	end record;
+
 	-- Package IO pour l'enregistrement de fichiers historiques de parties
 	package p_partie_io is new sequential_io(TR_InfoPartie);
 
@@ -32,8 +40,6 @@ package p_vue_graph is
 	-- Mapping des couleurs du package p_virus vers les couleurs des fenêtres
 	type TV_CouleurFenetre is array(T_Coul) of T_Couleur;
 	COULEURS_FENETRES: constant TV_CouleurFenetre := (FL_RED, FL_CYAN, FL_DARKORANGE, FL_MAGENTA, FL_DARKTOMATO, FL_DODGERBLUE, FL_DARKVIOLET, FL_CHARTREUSE, FL_YELLOW, FL_WHITE, FL_INACTIVE);
-
-
 
 	-- GESTION PARTIES ET SAUVEGARDES
 

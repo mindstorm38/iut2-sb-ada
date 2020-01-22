@@ -23,6 +23,8 @@ procedure av_graph is
 	clic_couleur: T_coul;
 	clic_direction: T_Direction;
 
+	derniere_sauv: TR_Sauvegarde;
+
 	f: p_piece_io.file_type;
 
 	function AttendreBoutonFenetreActuelle return String is
@@ -167,6 +169,8 @@ begin
 					end if;
 
 				elsif etat = SELECTION_DIR and JeuBoutonEstDirection(nom_bouton, clic_direction) then
+
+					derniere_sauv := (grille, info_partie.nb_deplacements, info_partie.nb_erreurs);
 
 					if Possible(grille, clic_couleur, clic_direction) then
 
