@@ -307,6 +307,19 @@ package body p_vue_graph is
 	end JeuAfficherGrille;
 
 
+	procedure JeuAutoriserAnnuler(fen: in out TR_Fenetre; autoriser: in boolean) is
+	-- {} => {Affiche ou non le bouton pour annuler le dernier déplacement selon 'autoriser'}
+	begin
+
+		if autoriser then
+			MontrerElem(fen, BOUTON_JEU_ANNULER);
+		else
+			CacherElem(fen, BOUTON_JEU_ANNULER);
+		end if;
+
+	end JeuAutoriserAnnuler;
+
+
 	function JeuBoutonEstClicCouleur(nom_bouton: in String; ligne: out T_Lig; col: out T_Col) return boolean is
 		-- {} => {Si le nom_bouton est celui d'une case couleur, alors ligne et col sont défini et True est retourné}
 	begin
@@ -377,6 +390,13 @@ package body p_vue_graph is
 	end JeuBoutonEstRegles;
 
 
+	function JeuBoutonEstAnnuler(nom_bouton: in String) return boolean is
+		-- {} => {Retourne True si le nom du bouton est celui de Annuler (le dernier voup)}
+	begin
+		return nom_bouton = BOUTON_JEU_ANNULER;
+	end JeuBoutonEstAnnuler;
+
+
 	-----------------
 	-- FENETRE FIN --
 	-----------------
@@ -386,21 +406,28 @@ package body p_vue_graph is
 
 	procedure CreerFenetreFin(fen : out TR_Fenetre) is
 		-- {} => {Création de la fenetre de congratulation de fin de partie}
+		NewLine : constant Character := Character'Val (10); --retour chariot
 	begin
-		fen := DebutFenetre("Felicitations", 440, 710);
+		fen := DebutFenetre("Felicitations", 480, 600);
 		AjouterTexte(fen,"Felecitations_Titre",
 			"FELICITATIONS,"
-			& NEW_LINE
+			& NewLine
 			&
 			"VOUS AVEZ GAGNE !"
-			,5, 5, 430, 150);
+			,25, 5, 430, 100);
 		ChangerTailleTexte(fen, "Felecitations_Titre", 30);
 		ChangerAlignementTexte(fen, "Felecitations_Titre", FL_ALIGN_CENTER);
 		ChangerStyleTexte(fen, "Felecitations_Titre", FL_TIMESBOLD_STYLE);
 
-		AjouterImage(fen, "Felicitations_image","trumpet_boi.xpm","",95,150,250,472);
+		AjouterImage(fen, "Felicitations_image1","trumpet_boi_left.xpm","",5,110,155,417);
 
-		AjouterBouton(fen, BOUTON_FIN_QUITTER, "Revenir a l'accueil", 120, 650, 200, 40);
+		AjouterImage(fen, "Felicitations_image2","trumpet_boi_right.xpm","",300,110,155,417);
+
+		AjouterTexte(fen,"Felecitations_Stats","STATISTIQUES",180,100,120,100);
+
+		AjouterBouton(fen, "Felecitations_Quitter", "Quitter", 140, 530, 200, 40);
+
+		AjouterBouton(fen, "Felecitations_EZ", "EZ", 215, 575, 50, 20);
 
 		FinFenetre(fen);
 

@@ -41,6 +41,8 @@ package p_vue_graph is
 	type TV_CouleurFenetre is array(T_Coul) of T_Couleur;
 	COULEURS_FENETRES: constant TV_CouleurFenetre := (FL_RED, FL_CYAN, FL_DARKORANGE, FL_MAGENTA, FL_DARKTOMATO, FL_DODGERBLUE, FL_DARKVIOLET, FL_CHARTREUSE, FL_YELLOW, FL_WHITE, FL_INACTIVE);
 
+
+
 	-- GESTION PARTIES ET SAUVEGARDES
 
 	procedure DefinirDebutPartie(info_partie: in out TR_InfoPartie);
@@ -77,6 +79,9 @@ package p_vue_graph is
 	procedure JeuAfficherGrille(fen: in out TR_Fenetre; grille: in TV_Grille; info_partie: in TR_InfoPartie);
 		-- {} => {Défini les couleurs des cases}
 
+	procedure JeuAutoriserAnnuler(fen: in out TR_Fenetre; autoriser: in boolean);
+		-- {} => {Affiche ou non le bouton pour annuler le dernier déplacement selon 'autoriser'}
+
 	function JeuBoutonEstClicCouleur(nom_bouton: in String; ligne: out T_Lig; col: out T_Col) return boolean;
 		-- {} => {Si le nom_bouton est celui d'une case couleur, alors ligne et col sont défini et True est retourné}
 
@@ -94,6 +99,9 @@ package p_vue_graph is
 
 	function JeuBoutonEstRegles(nom_bouton: in String) return boolean;
 		-- {} => {Retourne True si le nom du bouton est celui de Règles}
+
+	function JeuBoutonEstAnnuler(nom_bouton: in String) return boolean;
+		-- {} => {Retourne True si le nom du bouton est celui de Annuler (le dernier voup)}
 
 	-- FENETRE FIN
 

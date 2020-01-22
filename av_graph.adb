@@ -44,12 +44,19 @@ procedure av_graph is
 	end AttendreBoutonFenetreActuelle;
 
 	procedure InitEtConfigDepuisInfoPartie is
+		-- {} => {La partie a été initialisé et configuré}
 	begin
 
 		InitPartie(grille, pieces);
 		Configurer(f, info_partie.niveau, grille, pieces);
 
 	end InitEtConfigDepuisInfoPartie;
+
+	procedure DefinirDerniereSauv is
+		-- {} => {Defini la dernière sauvegarde par rapport à l'état actuel du jeu}
+	begin
+		derniere_sauv := (grille, info_partie.nb_erreurs, info_partie.nb_deplacements);
+	end DefinirDerniereSauv;
 
 begin
 
@@ -86,6 +93,9 @@ begin
 
 						InitEtConfigDepuisInfoPartie;
 						JeuAfficherGrille(fenetre_jeu, grille, info_partie);
+
+						DefinirDerniereSauv;
+						JeuAutoriserAnnuler(fenetre_jeu, false);
 
 						-- On défini le temps de debut de partie
 						DefinirDebutPartie(info_partie);
@@ -136,9 +146,12 @@ begin
 					-- On (re)défini le temps de debut de partie et on met à (re)met à zéro le nb_erreurs et nb_deplacements
 					DefinirDebutPartie(info_partie);
 
-					-- On appel l'initialisation puis la configuration de la partie, comme on le fait au début du jeu
+					-- On appel l'initialisation puis la configuration de la partie, comme on le fait au début du jeu. Et on defini la dernière sauvegarde.
 					InitEtConfigDepuisInfoPartie;
 					JeuAfficherGrille(fenetre_jeu, grille, info_partie);
+
+					DefinirDerniereSauv;
+					JeuAutoriserAnnuler(fenetre_jeu, false);
 
 					etat := SELECTION_CASE;
 
@@ -156,6 +169,16 @@ begin
 					CacherFenetre(fenetre_jeu);
 					MontrerFenetre(fenetre_regles);
 
+				elsif JeuBoutonEstAnnuler(nom_bouton) then
+
+					grille := derniere_sauv.grille;
+					info_partie.nb_deplacements := derniere_sauv.nb_deplacements + 1; -- On n'annule pas le comptage du dernier déplacement
+					info_partie.nb_erreurs := derniere_sauv.nb_erreurs;
+
+					-- Après avoir remis les informations du dernier coup,
+					JeuAfficherGrille(fenetre_jeu, grille, info_partie);
+					JeuAutoriserAnnuler(fenetre_jeu, false);
+
 				elsif JeuBoutonEstClicCouleur(nom_bouton, clic_ligne, clic_col) then
 
 					clic_couleur := grille(clic_ligne, clic_col);
@@ -170,7 +193,8 @@ begin
 
 				elsif etat = SELECTION_DIR and JeuBoutonEstDirection(nom_bouton, clic_direction) then
 
-					derniere_sauv := (grille, info_partie.nb_deplacements, info_partie.nb_erreurs);
+					DefinirDerniereSauv;
+					JeuAutoriserAnnuler(fenetre_jeu, true);
 
 					if Possible(grille, clic_couleur, clic_direction) then
 
