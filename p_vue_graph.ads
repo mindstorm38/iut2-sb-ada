@@ -6,7 +6,7 @@ with sequential_io;
 package p_vue_graph is
 
 	-- Enumération utilisé pour l'état actuel du jeu
-	type T_Etat is (ACCUEIL, REGLES, SELECTION_CASE, SELECTION_DIR, SUCCES, QUITTER);
+	type T_Etat is (ACCUEIL, CHOIX_NIVEAU, REGLES, SELECTION_CASE, SELECTION_DIR, SUCCES, QUITTER);
 	subtype T_EtatEnJeu is T_Etat range SELECTION_CASE..SELECTION_DIR;
 
 	-- Sous-type string pour les pseudo
@@ -34,14 +34,15 @@ package p_vue_graph is
 	-- Package IO pour l'enregistrement de fichiers historiques de parties
 	package p_partie_io is new sequential_io(TR_InfoPartie);
 
+	-- Type vecteur pour la liste des parties extraites du fichier
+	type TV_Parties is array(integer range <>) of TR_InfoPartie;
+
 	-- Erreur utilisé dans l'accueil si le pseudo ou le numéro de niveau est invalide
 	INFO_PARTIE_ERREUR: exception;
 
 	-- Mapping des couleurs du package p_virus vers les couleurs des fenêtres
 	type TV_CouleurFenetre is array(T_Coul) of T_Couleur;
 	COULEURS_FENETRES: constant TV_CouleurFenetre := (FL_RED, FL_CYAN, FL_DARKORANGE, FL_MAGENTA, FL_DARKTOMATO, FL_DODGERBLUE, FL_DARKVIOLET, FL_CHARTREUSE, FL_YELLOW, FL_WHITE, FL_INACTIVE);
-
-
 
 	-- GESTION PARTIES ET SAUVEGARDES
 
@@ -50,6 +51,18 @@ package p_vue_graph is
 
 	procedure DefinirFinPartie(info_partie: in out TR_InfoPartie);
 		-- {} => {info_partie.fin_partie est défini et info_partie.duree_partie est calculé}
+
+	function PartieStrictInf(partie, autre: in TR_InfoPartie) return boolean;
+		-- {} => {Retourne True si partie est inférieur à autre}
+
+	function RecupVecteurFichier(f: in out p_partie_io.file_type) return TV_Parties;
+		-- {f ouvert} => {Retourne un vecteur avec toutes les parties du fichier historique}
+
+	function RecupMeilleursPartiesNiveau(vec_parties: in TV_Parties; niveau, nb_parties_max: in integer) return TV_Parties;
+		-- {vec_parties est trié} => {Retourne un vecteur avec toutes les parties de niveau, mais limite le résultat à nb_parties_max}
+
+	procedure EcrireFichierAvecNouvellePartie(f: in out p_partie_io.file_type; vec_parties: in TV_Parties; nouvelle_partie: in TR_InfoPartie);
+		-- {f ouvert, vec_parties est trié} => {Les parties sont écrites dans le fichier historique}
 
 	-- FENETRE ACCUEIL
 
@@ -107,6 +120,9 @@ package p_vue_graph is
 
 	procedure CreerFenetreFin(fen : out TR_Fenetre);
 		-- {} => {Création de la fenetre de congratulation de fin de partie}
+
+	procedure FinAfficherStats(fen : in out TR_Fenetre; info_partie: in TR_InfoPartie; historique: in TV_Parties);
+		-- {} => {Affichage des stats de la partie}
 
 	function FinBoutonEstQuitter(nom_bouton: in String) return boolean;
 		-- {} => {True si le nom_bouton est le bouton Quitter}

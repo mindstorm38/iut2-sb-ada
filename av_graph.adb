@@ -4,6 +4,7 @@ use p_vue_graph, p_fenbase, text_io, p_virus, ada.exceptions;
 procedure av_graph is
 
 	use p_piece_io;
+	use p_partie_io;
 
 	NIVEAU_MAX: constant integer := 20;
 
@@ -26,6 +27,7 @@ procedure av_graph is
 	derniere_sauv: TR_Sauvegarde;
 
 	f: p_piece_io.file_type;
+	f_historique: p_partie_io.file_type;
 
 	function AttendreBoutonFenetreActuelle return String is
 		-- {} => {Attend, en fonction de la fenetre actuelle, le clic des boutons}
@@ -58,9 +60,18 @@ procedure av_graph is
 		derniere_sauv := (grille, info_partie.nb_erreurs, info_partie.nb_deplacements);
 	end DefinirDerniereSauv;
 
+	procedure OuvrirFichierHistorique is
+		-- {} => {f_historique a été ouvert, ou créé si non existant}
+	begin
+		open(f_historique, in_file, "Historique");
+	exception
+		when p_partie_io.NAME_ERROR => create(f_historique, out_file, "Historique");
+ 	end OuvrirFichierHistorique;
+
 begin
 
 	open(f, in_file, "Parties");
+	OuvrirFichierHistorique;
 
 	InitialiserFenetres;
 
@@ -172,8 +183,8 @@ begin
 				elsif JeuBoutonEstAnnuler(nom_bouton) then
 
 					grille := derniere_sauv.grille;
-					info_partie.nb_deplacements := derniere_sauv.nb_deplacements + 1; -- On n'annule pas le comptage du dernier déplacement
-					info_partie.nb_erreurs := derniere_sauv.nb_erreurs;
+					info_partie.nb_deplacements := derniere_sauv.nb_deplacements;
+					info_partie.nb_erreurs := derniere_sauv.nb_erreurs + 1; -- Annuler rajoute une erreur
 
 					-- Après avoir remis les informations du dernier coup,
 					JeuAfficherGrille(fenetre_jeu, grille, info_partie);
@@ -214,10 +225,18 @@ begin
 
 						DefinirFinPartie(info_partie);
 
+						-- Dans ce declare on recupère le vecteur depuis le fichier d'historique puis on y ajoute la nouvelle partie au bon endroit.
+						declare
+							vec_parties: TV_Parties := RecupVecteurFichier(f_historique);
+						begin
+							EcrireFichierAvecNouvellePartie(f_historique, vec_parties, info_partie);
+							-- OuvrirFichierHistorique; -- On réouvre le fichier puisque la procedure au dessus appel 'close' afin de finaliser la lecture.
+						end;
+
+						FinAfficherStats(fenetre_fin, info_partie, RecupVecteurFichier(f_historique));
+
 						CacherFenetre(fenetre_jeu);
 						MontrerFenetre(fenetre_fin);
-
-						put_line("Succés ! " & integer'image(info_partie.duree_partie));
 
 					else
 						etat := SELECTION_CASE;

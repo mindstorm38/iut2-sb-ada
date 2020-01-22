@@ -6,10 +6,11 @@ package body p_vue_graph is
 	-- Constante pour le caractère de retour à la ligne
 	NEW_LINE: constant character := character'Val(10);
 
+	use p_partie_io;
+
 	------------------------------------
 	-- GESTION PARTIES ET SAUVEGARDES --
 	------------------------------------
-
 
 	procedure DefinirDebutPartie(info_partie: in out TR_InfoPartie) is
 		-- {} => {info_partie.debut_partie est défini au temps actuel, info_partie.nb_erreurs et info_partie.nb_deplacements sont mis à zero}
@@ -28,6 +29,155 @@ package body p_vue_graph is
 		info_partie.fin_partie := clock;
 		info_partie.duree_partie := integer(info_partie.fin_partie - info_partie.debut_partie);
 	end DefinirFinPartie;
+
+
+	function PartieStrictInf(partie, autre: in TR_InfoPartie) return boolean is
+		-- {} => {Retourne True si partie est inférieur à autre}
+	begin
+		return partie.nb_deplacements < autre.nb_deplacements or else (partie.nb_deplacements = autre.nb_deplacements and partie.duree_partie < autre.duree_partie);
+	end PartieStrictInf;
+
+	function RecupVecteurFichier(f: in out p_partie_io.file_type) return TV_Parties is
+		-- {f ouvert} => {Retourne un vecteur avec toutes les parties du fichier historique}
+		tampon : TR_InfoPartie;
+		nb_elem_f: integer := 0;
+		compteur: integer;
+	begin
+
+		reset(f, in_file);
+
+		-- Comptage du le nombre d elements
+		while not end_of_file(f) loop
+			read(f,tampon);
+			nb_elem_f := nb_elem_f + 1;
+		end loop;
+
+		reset(f, in_file);
+
+		-- Copie du fichier dans un vecteur de même taille
+		declare
+			V: TV_Parties(1..nb_elem_f);
+		begin
+
+			compteur := 1;
+
+			while not end_of_file(f) loop
+				read(f,tampon);
+				V(compteur) := tampon;
+				compteur := compteur + 1;
+			end loop;
+
+			return V;
+
+		end;
+
+	end RecupVecteurFichier;
+
+
+	function RecupMeilleursPartiesNiveau(vec_parties: in TV_Parties; niveau, nb_parties_max: in integer) return TV_Parties is
+		-- {vec_parties est trié} => {Retourne un vecteur avec toutes les parties de niveau, mais limite le nombre de résultats à nb_parties_max}
+
+		-- Le -1 est pour être sûr d'avoir un indice invalide comme marqueur.
+		INDICE_INVALIDE: constant integer := vec_parties'First - 1;
+		VECTEUR_VIDE: TV_Parties(1..0);
+
+		nb_parties: integer := 0;
+		idx_premiere_partie: integer := INDICE_INVALIDE;
+
+	begin
+
+		for i in vec_parties'Range loop
+
+			if vec_parties(i).niveau = niveau then
+
+				if idx_premiere_partie = INDICE_INVALIDE then
+					idx_premiere_partie := i;
+				end if;
+
+				nb_parties := nb_parties + 1;
+
+				if nb_parties = nb_parties_max then
+					exit;
+				end if;
+
+			elsif vec_parties(i).niveau > niveau then
+				exit;
+			end if;
+
+		end loop;
+
+		if nb_parties /= 0 then
+
+			declare
+				ret: TV_Parties(1..nb_parties);
+				j: integer := 1;
+			begin
+
+				for i in idx_premiere_partie..(idx_premiere_partie + nb_parties - 1) loop
+					ret(j) := vec_parties(i);
+					j := j + 1;
+				end loop;
+
+				return ret;
+
+			end;
+
+		else
+			return VECTEUR_VIDE;
+		end if;
+
+	end RecupMeilleursPartiesNiveau;
+
+
+	procedure EcrireFichierAvecNouvellePartie(f: in out p_partie_io.file_type; vec_parties: in TV_Parties; nouvelle_partie: in TR_InfoPartie) is
+		-- {f ouvert, vec_parties est trié suivant le niveau et PartieStrictInf} => {Les parties sont écrites dans le fichier historique, f est fermé}
+		insere: boolean := false;
+		meilleur_score: boolean := true;
+	begin
+
+		-- Par défaut meilleur_score est à true, donc il faut le passer à false si un autre score dans ce niveau et ce pseudo est meilleur
+		for i in vec_parties'Range loop
+			if vec_parties(i).niveau = nouvelle_partie.niveau and then vec_parties(i).pseudo = nouvelle_partie.pseudo and then PartieStrictInf(vec_parties(i), nouvelle_partie) then
+				meilleur_score := false;
+				exit;
+			end if;
+		end loop;
+
+		reset(f, out_file);
+
+		for i in vec_parties'Range loop
+
+			-- On cherche à écrire le nouveau joueur uniquement si son score est meilleur que le précédent et qu'il n'a pas été déjà inséré.
+			if meilleur_score and not insere then
+
+				-- On insère notre nouvelle partie uniquement si on est arrivé à la fin du niveau,
+				-- ou que la partie qu'on est en train de lire est inférieur à la partie qu'on veut ajouter.
+				if (vec_parties(i).niveau = nouvelle_partie.niveau and then PartieStrictInf(nouvelle_partie, vec_parties(i))) or (vec_parties(i).niveau > nouvelle_partie.niveau) then
+
+					write(f, nouvelle_partie);
+					insere := true;
+
+				end if;
+
+			end if;
+
+			-- Si le niveau n'est pas celui dans lequel on veut insérer, alors on écrit bêtement les parties.
+			-- Sinon on regarde que le joueur n'ai pas fait un meilleur score, dans ce cas on cherche pas en exclure un.
+			-- Dans le dernier cas si le niveau est celui qu'on cherche et que le joueur à fait un meilleur score alors on vérifie que le pseudo n'est pas celui du joueur
+			if vec_parties(i).niveau /= nouvelle_partie.niveau or else not meilleur_score or else vec_parties(i).pseudo /= nouvelle_partie.pseudo then
+				write(f, vec_parties(i));
+			end if;
+
+		end loop;
+
+		-- En dernier cas si le joueur a fait un meilleur score mais qu'il n'a pas été inséré, on l'insère à la fin du fichier.
+		if meilleur_score and not insere then
+			write(f, nouvelle_partie);
+		end if;
+
+		-- close(f);
+
+	end EcrireFichierAvecNouvellePartie;
 
 	---------------------
 	-- FENETRE ACCUEIL --
@@ -401,43 +551,113 @@ package body p_vue_graph is
 	-- FENETRE FIN --
 	-----------------
 
-
 	BOUTON_FIN_QUITTER: String := "fin_quitter";
+	TEXTE_FIN_STATS: String := "fin_stats";
+	MAX_TAILLE_HISTORIQUE: integer := 3;
+
+	function RecupNomLigneHistorique(i: in integer) return String is
+	begin
+		return "historique_ligne_" & integer'Image(i);
+	end RecupNomLigneHistorique;
 
 	procedure CreerFenetreFin(fen : out TR_Fenetre) is
 		-- {} => {Création de la fenetre de congratulation de fin de partie}
-		NewLine : constant Character := Character'Val (10); --retour chariot
+		y: integer;
 	begin
-		fen := DebutFenetre("Felicitations", 480, 600);
-		AjouterTexte(fen,"Felecitations_Titre",
+		fen := DebutFenetre("Anti-Virus - Felicitations", 480, 600);
+
+		AjouterTexte(fen, "felecitations_titre",
 			"FELICITATIONS,"
-			& NewLine
-			&
-			"VOUS AVEZ GAGNE !"
-			,25, 5, 430, 100);
-		ChangerTailleTexte(fen, "Felecitations_Titre", 30);
-		ChangerAlignementTexte(fen, "Felecitations_Titre", FL_ALIGN_CENTER);
-		ChangerStyleTexte(fen, "Felecitations_Titre", FL_TIMESBOLD_STYLE);
+			& NEW_LINE &
+			"VOUS AVEZ GAGNE !",
+			25, 5, 430, 100);
 
-		AjouterImage(fen, "Felicitations_image1","trumpet_boi_left.xpm","",5,110,155,417);
+		ChangerTailleTexte(fen, "felecitations_titre", 30);
+		ChangerAlignementTexte(fen, "felecitations_titre", FL_ALIGN_CENTER);
+		ChangerStyleTexte(fen, "felecitations_titre", FL_TIMESBOLD_STYLE);
 
-		AjouterImage(fen, "Felicitations_image2","trumpet_boi_right.xpm","",300,110,155,417);
+		AjouterImage(fen, "felicitations_image1", "trumpet_boi_left.xpm", "", 5, 110, 155, 417);
 
-		AjouterTexte(fen,"Felecitations_Stats","STATISTIQUES",180,100,120,100);
+		AjouterImage(fen, "felicitations_image2", "trumpet_boi_right.xpm", "", 320, 110, 155, 417);
 
-		AjouterBouton(fen, "Felecitations_Quitter", "Quitter", 140, 530, 200, 40);
+		AjouterTexte(fen, TEXTE_FIN_STATS, "", 140, 120, 200, 100);
+		ChangerAlignementTexte(fen, TEXTE_FIN_STATS, FL_ALIGN_CENTER);
 
-		AjouterBouton(fen, "Felecitations_EZ", "EZ", 215, 575, 50, 20);
+		AjouterTexte(fen, "felecitations_classement", "CLASSEMENT", 160, 250, 160, 20);
+		ChangerTailleTexte(fen, "felecitations_classement", 15);
+		ChangerAlignementTexte(fen, "felecitations_classement", FL_ALIGN_CENTER);
+		ChangerStyleTexte(fen, "felecitations_classement", FL_TIMESBOLD_STYLE);
+
+		y := 280;
+		for i in 1..MAX_TAILLE_HISTORIQUE loop
+
+			AjouterTexte(fen, RecupNomLigneHistorique(i), "", 160, y, 160, 70);
+			ChangerAlignementTexte(fen, RecupNomLigneHistorique(i), FL_ALIGN_CENTER);
+
+			y := y + 80;
+
+		end loop;
+
+		AjouterBouton(fen, BOUTON_FIN_QUITTER, "Quitter", 140, 530, 200, 40);
 
 		FinFenetre(fen);
 
 	end CreerFenetreFin;
+
+
+	procedure FinAfficherStats(fen : in out TR_Fenetre; info_partie: in TR_InfoPartie; historique: in TV_Parties) is
+		-- {} => {Affichage des stats de la partie}
+		suffix_err: character := ' ';
+		meilleur_parties: TV_Parties := RecupMeilleursPartiesNiveau(historique, info_partie.niveau, MAX_TAILLE_HISTORIQUE);
+	begin
+
+		if info_partie.nb_erreurs > 1 then
+			suffix_err := 's';
+		end if;
+
+		ChangerTexte(fen, TEXTE_FIN_STATS,
+			info_partie.pseudo(1..info_partie.taille_pseudo) & "," & NEW_LINE & "voici vos stats :"
+			& NEW_LINE
+			& NEW_LINE
+			&
+			"Temps partie :" & integer'Image(info_partie.duree_partie) & "s"
+			& NEW_LINE
+			&
+			"Deplacements :" & integer'Image(info_partie.nb_deplacements)
+			& NEW_LINE
+			&
+			"Erreur" & suffix_err & " :" & integer'Image(info_partie.nb_erreurs)
+		);
+
+		for i in 1..3 loop
+
+			if i in meilleur_parties'Range then
+
+				ChangerTexte(fen, RecupNomLigneHistorique(i),
+					"Num" & integer'Image(i) & " : "
+					& NEW_LINE
+					& "> " & meilleur_parties(i).pseudo(1..meilleur_parties(i).taille_pseudo) & " <"
+					& NEW_LINE
+					& "Deplacements : " & integer'image(meilleur_parties(i).nb_deplacements)
+					& NEW_LINE
+					& "Temps : " & integer'image(meilleur_parties(i).duree_partie) & "s"
+				);
+
+			else
+				ChangerTexte(fen, RecupNomLigneHistorique(i), "");
+			end if;
+
+		end loop;
+
+	end FinAfficherStats;
+
 
 	function FinBoutonEstQuitter(nom_bouton: in String) return boolean is
 		-- {} => {True si le nom_bouton est le bouton Quitter}
 	begin
 		return nom_bouton = BOUTON_FIN_QUITTER;
 	end FinBoutonEstQuitter;
+
 
 	----------------
 	-- EXTENTIONS --
@@ -468,7 +688,7 @@ package body p_vue_graph is
 				& NEW_LINE
 				& NEW_LINE
 				&
-				"Comment jouer ? " & NEW_LINE & "Cliquez sur le virus ou une molecule pour la selectionner, puis" & NEW_LINE & "cliquez sur une des fleches directionnelles qui apparatront en bas" & NEW_LINE & "pour la deplacer. La couleur selectionnee s affiche au milieu des" & NEW_LINE & "fleches directionnelles."
+				"Comment jouer ? " & NEW_LINE & "Cliquez sur le virus ou une molecule pour la selectionner, puis" & NEW_LINE & "cliquez sur une des fleches directionnelles qui apparaitront en bas" & NEW_LINE & "pour la deplacer. La couleur selectionnee s affiche au milieu des" & NEW_LINE & "fleches directionnelles."
 				& NEW_LINE
 				& NEW_LINE
 				&
